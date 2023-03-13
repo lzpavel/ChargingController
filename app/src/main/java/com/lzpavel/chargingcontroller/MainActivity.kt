@@ -8,7 +8,6 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.lzpavel.chargingcontroller.appview.MainView
@@ -27,10 +26,8 @@ class MainActivity : ComponentActivity() {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             val binder = service as ChargingService.ChargingServiceBinder
             chargingService = binder.getService()
-            mainView.switchControl.value = chargingService.isStarted
-            mainView.switchCharge.value = chargingService.chargingControl.commands.getSwitch()
-
-            subscribeSwitches()
+            Settings.isChargingSwitch = chargingService.chargingControl.commands.getSwitch()
+            updateUi()
 
             Log.d(LOG_TAG, "onServiceConnected")
         }
@@ -62,28 +59,19 @@ class MainActivity : ComponentActivity() {
             chargingService.chargingControl.commands.resetBatteryStats()
         }
         mainView.onClickButtonStart {
-            initLevelLimit(mainView.levelLimit.value)
-            initCurrentLimit(mainView.currentLimit.value)
-            startService(Intent(this, ChargingService::class.java))
-            //chargingService.chargingControl.startControl(mainView.levelLimit.value, mainView.currentLimit.value)
-            //startService(Intent(this, ChargingService::class.java))
+            startControl()
         }
         mainView.onClickButtonStop {
             chargingService.stopChargingService()
         }
         mainView.onClickButtonTest {
-            //Toast.makeText(this, "Click", Toast.LENGTH_SHORT).show()
             mainView.switchControl.value = !mainView.switchControl.value
         }
 
         mainView.onCheckedChangeSwitchControl {
             Log.d(LOG_TAG, "onCheckedChangeSwitchControl:$it")
             if (it) {
-                //chargingService.chargingControl.startControl(mainView.levelLimit.value, mainView.currentLimit.value)
-                initLevelLimit(mainView.levelLimit.value)
-                initCurrentLimit(mainView.currentLimit.value)
-                //chargingService.chargingControl.startControl()
-                startService(Intent(this, ChargingService::class.java))
+                startControl()
             } else {
                 chargingService.stopChargingService()
             }
@@ -92,13 +80,13 @@ class MainActivity : ComponentActivity() {
             chargingService.chargingControl.commands.setSwitch(it)
         }
         mainView.onCheckedChangeCheckBoxAutoResetBatteryStats = {
-            chargingService.chargingControl.isAutoResetBatteryStats = it
+            Settings.isAutoResetBatteryStats = it
         }
         mainView.onCheckedChangeCheckBoxAutoSwitchOn = {
-            chargingService.chargingControl.isAutoSwitchOn = it
+            Settings.isAutoSwitchOn = it
         }
         mainView.onCheckedChangeCheckBoxAutoStop = {
-            chargingService.chargingControl.isAutoStop = it
+            Settings.isAutoStop = it
         }
         mainView.onDoneLevelLimit = {
             initLevelLimit(it)
@@ -107,11 +95,11 @@ class MainActivity : ComponentActivity() {
             initCurrentLimit(it)
         }
 
-
     }
 
     override fun onStart() {
         super.onStart()
+        Settings.mainActivity = this
         Intent(this, ChargingService::class.java).also { intent ->
             bindService(intent, chargingServiceConnection, Context.BIND_AUTO_CREATE)
         }
@@ -119,39 +107,42 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        unsubscribeSwitches()
+        Settings.mainActivity = null
         unbindService(chargingServiceConnection)
     }
 
-    fun subscribeSwitches() {
-        chargingService.chargingControl.onChangeChargingSwitch = {
-            mainView.switchCharge.value = it
-        }
-        chargingService.onServiceStateChanged = {
-            mainView.switchControl.value = it
-        }
+    fun updateUi() {
+        mainView.levelLimit.value = Settings.levelLimit.toString()
+        mainView.currentLimit.value = Settings.currentLimit.toString()
+        mainView.checkBoxAutoResetBatteryStats.value = Settings.isAutoResetBatteryStats
+        mainView.checkBoxAutoSwitchOn.value = Settings.isAutoSwitchOn
+        mainView.checkBoxAutoStop.value = Settings.isAutoStop
+
+        mainView.switchControl.value = Settings.isControl
+        mainView.switchCharge.value = Settings.isChargingSwitch
     }
 
-    fun unsubscribeSwitches() {
-        chargingService.chargingControl.onChangeChargingSwitch = {}
-        chargingService.onServiceStateChanged = {}
+    fun startControl() {
+        initLevelLimit(mainView.levelLimit.value)
+        initCurrentLimit(mainView.currentLimit.value)
+        startService(Intent(this, ChargingService::class.java))
     }
 
     fun initLevelLimit(value: String) {
         val lim = value.toIntOrNull()
         if ((lim != null) && (lim >= 0) && (lim <= 100)) {
-            chargingService.chargingControl.levelLimit = lim
+            Settings.levelLimit = lim
         } else {
-            chargingService.chargingControl.levelLimit = 80
+            Settings.levelLimit = 80
             mainView.levelLimit.value = "80"
         }
     }
     fun initCurrentLimit(value: String) {
         val lim = value.toIntOrNull()
         if ((lim != null) && (lim >= 0)) {
-            chargingService.chargingControl.currentLimit = lim
+            Settings.currentLimit = lim
         } else {
-            chargingService.chargingControl.currentLimit = 1000000
+            Settings.currentLimit = 1000000
             mainView.currentLimit.value = "1000000"
         }
     }

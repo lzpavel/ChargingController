@@ -16,67 +16,27 @@ class ChargingService : Service() {
 
     private val chargingServiceBinder = ChargingServiceBinder()
     var superUser: SuperUser? = null
-    //val chargingControl: ChargingControl
     var chargingControl = ChargingControl()
     private val chargingReceiver = ChargingReceiver(chargingControl)
-    var isStarted: Boolean = false
-
-    var onServiceStateChanged: (Boolean) -> Unit = {}
 
     override fun onCreate() {
         super.onCreate()
         try {
             superUser = SuperUser()
             chargingControl.commands = SuperUserCommands(superUser!!)
-
-            //chargingControl.superUser = superUser
-
         } catch (e: Exception) {
             Log.e(LOG_TAG, "SU permission denied")
         }
         registerBroadcastReceiver()
-        chargingControl.onStopControl = { stopChargingService() }
+        chargingControl.chargingService = this
         Log.d(LOG_TAG, "onCreate")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(LOG_TAG, "onStartCommand")
-        startForeground(1, ChargingNotification.build(this, "level limit: ${chargingControl.levelLimit}"))
+        startForeground(1, ChargingNotification.build(this, "level limit: ${Settings.levelLimit}"))
         chargingControl.startControl()
-        isStarted = true
-        onServiceStateChanged.invoke(isStarted)
-
-        //chargingReceiver.onBatteryChanged = chargingControl.onBatteryChanged
-
-
-
-
-        //chargingControl.batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-        //chargingReceiver.onBatteryChanged = chargingControl.onBatteryChanged
-
-
-        /*batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-        val levelLimit = intent?.getStringExtra("level")?.toIntOrNull()
-        startForeground(1, ChargingNotification.build(this, "level limit: $levelLimit"))
-        isStarted = true
-        Log.d(LOG_TAG, "level $levelLimit")
-        chargingReceiver.onBatteryChanged = {
-
-            val levelNow = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-
-            if (levelNow != null && levelLimit != null) {
-                if (levelNow >= levelLimit) {
-                    device?.switchOff()
-                    Log.d(LOG_TAG, "SwitchOff")
-                    ChargingNotification.show(this, "level limit: $levelLimit completed")
-                }
-            }
-
-            //Log.d(LOG_TAG, batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).toString())
-            //Log.d(LOG_TAG, batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER).toString())
-            //Log.d(LOG_TAG, batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW).toString())
-
-        }*/
+        Settings.isControl = true
 
         //return super.onStartCommand(intent, flags, startId)
         //return START_REDELIVER_INTENT
@@ -109,8 +69,8 @@ class ChargingService : Service() {
         chargingControl.stopControl()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
-        isStarted = false
-        onServiceStateChanged.invoke(isStarted)
+        Settings.isControl = false
+        Settings.updateUi()
     }
 
     fun registerBroadcastReceiver() {
