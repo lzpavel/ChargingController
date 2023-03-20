@@ -70,7 +70,6 @@ class ChargingService : Service() {
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         Settings.isControl = false
-        Settings.updateUi()
     }
 
     fun registerBroadcastReceiver() {

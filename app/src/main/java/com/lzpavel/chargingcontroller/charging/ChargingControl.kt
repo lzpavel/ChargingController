@@ -37,7 +37,6 @@ class ChargingControl() {
                     if (Settings.isAutoSwitchOn) {
                         commands.setSwitch(true)
                         Settings.isChargingSwitch = true
-                        Settings.updateUi()
                     }
                     if (Settings.isAutoResetBatteryStats) {
                         commands.resetBatteryStats()
@@ -76,7 +75,6 @@ class ChargingControl() {
     fun stopCharging() {
         commands.setSwitch(false)
         Settings.isChargingSwitch = false
-        Settings.updateUi()
         isCheckingCurrent = false
     }
 

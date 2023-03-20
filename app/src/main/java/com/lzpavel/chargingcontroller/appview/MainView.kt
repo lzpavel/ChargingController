@@ -21,6 +21,8 @@ import com.lzpavel.chargingcontroller.ui.theme.ChargingControllerTheme
 
 class MainView {
 
+    var isChangedSettings = false
+
     var onClickButtonTest: () -> Unit = {}
     var onClickButtonSetCurrent: () -> Unit = {}
     var onClickButtonSwitchOn: () -> Unit = {}
@@ -101,6 +103,7 @@ class MainView {
                             onDone = {
                                 keyboardController?.hide()
                                 focusManager.clearFocus()
+                                isChangedSettings = true
                                 onDoneLevelLimit.invoke(levelLimit.value)
                             }
                         ),
@@ -121,6 +124,7 @@ class MainView {
                             onDone = {
                                 keyboardController?.hide()
                                 focusManager.clearFocus()
+                                isChangedSettings = true
                                 onDoneCurrentLimit.invoke(currentLimit.value)
                             }
                         ),
@@ -228,6 +232,7 @@ class MainView {
                                 checked = checkBoxAutoResetBatteryStats.value,
                                 onCheckedChange = {
                                     checkBoxAutoResetBatteryStats.value = it
+                                    isChangedSettings = true
                                     onCheckedChangeCheckBoxAutoResetBatteryStats.invoke(it)
                                 }
                             )
@@ -242,6 +247,7 @@ class MainView {
                                 checked = checkBoxAutoSwitchOn.value,
                                 onCheckedChange = {
                                     checkBoxAutoSwitchOn.value = it
+                                    isChangedSettings = true
                                     onCheckedChangeCheckBoxAutoSwitchOn.invoke(it)
                                 }
                             )
@@ -256,6 +262,7 @@ class MainView {
                                 checked = checkBoxAutoStop.value,
                                 onCheckedChange = {
                                     checkBoxAutoStop.value = it
+                                    isChangedSettings = true
                                     onCheckedChangeCheckBoxAutoStop.invoke(it)
                                 }
                             )

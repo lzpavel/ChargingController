@@ -27,7 +27,6 @@ class MainActivity : ComponentActivity() {
             val binder = service as ChargingService.ChargingServiceBinder
             chargingService = binder.getService()
             Settings.isChargingSwitch = chargingService.chargingControl.commands.getSwitch()
-            updateUi()
 
             Log.d(LOG_TAG, "onServiceConnected")
         }
@@ -39,12 +38,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(LOG_TAG, "onCreate")
         setContent {
             mainView.setView()
         }
 
         ChargingNotification.createChannel(getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-
 
         mainView.onClickButtonSetCurrent {
             chargingService.chargingControl.commands.setCurrent(mainView.currentLimit.value)
@@ -65,7 +64,7 @@ class MainActivity : ComponentActivity() {
             chargingService.stopChargingService()
         }
         mainView.onClickButtonTest {
-            mainView.switchControl.value = !mainView.switchControl.value
+
         }
 
         mainView.onCheckedChangeSwitchControl {
@@ -95,11 +94,15 @@ class MainActivity : ComponentActivity() {
             initCurrentLimit(it)
         }
 
+
+
     }
 
     override fun onStart() {
         super.onStart()
+        Log.d(LOG_TAG, "onStart")
         Settings.mainActivity = this
+        Settings.load()
         Intent(this, ChargingService::class.java).also { intent ->
             bindService(intent, chargingServiceConnection, Context.BIND_AUTO_CREATE)
         }
@@ -107,19 +110,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        Log.d(LOG_TAG, "onStop")
+        if (mainView.isChangedSettings) {
+            Settings.save()
+            mainView.isChangedSettings = false
+        }
         Settings.mainActivity = null
         unbindService(chargingServiceConnection)
-    }
-
-    fun updateUi() {
-        mainView.levelLimit.value = Settings.levelLimit.toString()
-        mainView.currentLimit.value = Settings.currentLimit.toString()
-        mainView.checkBoxAutoResetBatteryStats.value = Settings.isAutoResetBatteryStats
-        mainView.checkBoxAutoSwitchOn.value = Settings.isAutoSwitchOn
-        mainView.checkBoxAutoStop.value = Settings.isAutoStop
-
-        mainView.switchControl.value = Settings.isControl
-        mainView.switchCharge.value = Settings.isChargingSwitch
     }
 
     fun startControl() {
