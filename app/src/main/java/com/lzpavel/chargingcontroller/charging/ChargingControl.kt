@@ -52,8 +52,6 @@ class ChargingControl() {
     }
 
     fun startControl() {
-        val rxCurrent = commands.getCurrent().toInt()
-        isPlugged = rxCurrent != 0
         if (isPlugged) {
             mode = Mode.CHARGING
             startCharging()
@@ -81,9 +79,9 @@ class ChargingControl() {
     private fun startCheckingCurrent() {
         thread {
             while (isCheckingCurrent) {
-                Thread.sleep(1000)
-                Log.d(LOG_TAG, "Check current: tick")
                 checkCurrent()
+                Log.d(LOG_TAG, "Check current: tick")
+                Thread.sleep(1000)
             }
         }
     }
@@ -91,9 +89,9 @@ class ChargingControl() {
     private fun checkCurrent() {
         val rxCurrent = commands.getCurrent().toInt()
         Log.d(LOG_TAG, "Check current: rxCurrent:$rxCurrent currentLimit:${Settings.currentLimit}")
-        if (rxCurrent != Settings.currentLimit && isCheckingCurrent && rxCurrent != 0) {
+        if (rxCurrent != Settings.currentLimit && isPlugged && rxCurrent != 0) {
             commands.setCurrent(Settings.currentLimit.toString())
-            Log.d(LOG_TAG, "Check: write current:${Settings.currentLimit}")
+            Log.d(LOG_TAG, "Check current: write current:${Settings.currentLimit}")
         }
     }
 
